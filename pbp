@@ -1,0 +1,232 @@
+#!/usr/bin/ruby
+
+require 'json'
+require 'net/https'
+require 'pp'
+
+#check with
+#v2-bus-list.json
+#v2-client-list.json
+#v2-user-list.json
+#v2-grant-list.json
+
+class Response
+  attr_reader(:code, :message, :body)
+
+  def initialize(code, message, body)
+    @code = code
+    @message = message
+    @body = body
+  end
+
+  def hasError
+    return code.to_i != 200
+  end
+end
+
+class BpProvisionRequest
+  attr_reader(:admin, :secret, :hostname, :configs)
+
+  def initialize(adminid, secret, hostname)
+    @admin = adminid
+    @secret = secret
+    @hostname = hostname
+    @configs = []
+  end
+
+  def to_json(*a)
+    {
+       :admin => @admin,
+       :secret => @secret,
+       :configs => @configs,
+    }.to_json(*a)
+  end
+end
+
+class BpGrantRequest
+  attr_reader(:admin, :secret, :hostname, :grants)
+
+  def initialize(adminid, secret, hostname, grants)
+    @admin = adminid
+    @secret = secret
+    @hostname = hostname
+    @grants = grants 
+  end
+
+  def to_json(*a)
+    {
+       :admin => @admin,
+       :secret => @secret,
+       :grants => @grants,
+    }.to_json(*a)
+  end
+end
+class BpBusOwnerConfig
+  attr_reader(:userid, :password)
+
+  def initialize(userid, password)
+    @userid = userid
+    @password = password
+  end
+
+  def to_json(*a)
+    {
+       :USER => @userid,
+       :PWDHASH => @password,
+    }.to_json(*a)
+  end
+end
+
+class BpClientConfig
+  attr_reader(:userid, :password, :sourceURL, :redirectURI)
+
+  def initialize(userid, password, sourceURL, redirectURI)
+    @userid = userid
+    @password = password
+    @sourceURL = sourceURL
+    @redirectURI = redirectURI
+  end
+
+  def to_json(*a)
+    {
+       :USER => @userid,
+       :PWDHASH => @password,
+       :SOURCE_URL => @sourceURL,
+       :REDIRECT_URI => @redirectURI,
+    }.to_json(*a)
+  end
+end
+
+class BpBus
+  attr_reader(:name, :owner, :retentionTime, :stickyTime)
+
+  def self.build(name, owner)
+    return BpBus.new(name, owner, 28800, 28800)
+  end
+
+  def initialize(name, owner, retentionTime, stickyTime)
+    @name = name
+    @owner = owner
+    @retentionTime = retentionTime
+    @stickyTime = stickyTime
+  end
+
+  def to_json(*a)
+    {
+      :BUS_NAME => @name,
+      :OWNER => @owner,
+      :RETENTION_TIME_SECONDS => @retentionTime,
+      :RETENTION_STICKY_TIME_SECONDS => @stickyTime
+    }.to_json(*a)
+  end
+end
+
+class BpGrant
+  attr_reader(:clientname, :busname)
+
+  def initialize(client, bus)
+    @clientname = client
+    @busname = bus
+  end
+
+  def to_json(*a)
+    {
+      :BUS_NAME => @busname,
+      :CLIENT => @clientname,
+    }.to_json(*a)
+  end
+end
+#1 create user to be the bus owner with v2-user-create.json https://backplane1.janrainbackplane.com/v2/provision/user/update
+def createBusOwner(bpReq)
+  http = Net::HTTP.new(bpReq.hostname, 443)
+  http.use_ssl = true
+  req = Net::HTTP::Post.new("/v2/provision/user/update", initheader= {'Content-Type' =>'application/json'})
+  req.body = bpReq.to_json
+  puts req.body
+  response = http.start {|http| http.request(req) }
+  return Response.new(response.code, response.message, response.body)
+end
+
+#2 create bus, owned by user from step 1: v2-bus-create.json https://backplane1.janrainbackplane.com/v2/provision/bus/update
+def createBus(bpReq)
+  http = Net::HTTP.new(bpReq.hostname, 443)
+  http.use_ssl = true
+  post = Net::HTTP::Post.new("/v2/provision/bus/update", initheader= {'Content-Type' =>'application/json'})
+  post.body = bpReq.to_json
+  puts post.body
+  response = http.start {|http| http.request(post) }
+  return Response.new(response.code, response.message, response.body)
+end
+
+#3 create client v2-client-create.json endpoint https://backplane1.janrainbackplane.com/v2/provision/client/update
+def createClient(bpReq)
+  http = Net::HTTP.new(bpReq.hostname, 443)
+  http.use_ssl = true
+  post = Net::HTTP::Post.new("/v2/provision/client/update", initheader= {'Content-Type' =>'application/json'})
+  post.body = bpReq.to_json
+  puts post.body
+  response = http.start {|http| http.request(post) }
+  return Response.new(response.code, response.message, response.body)
+#{
+  #"admin": "bpadmin",
+  #"secret": "secret",
+  #"configs": [
+    #{ "USER": "digitalvisitor_client", "PWDHASH": "passwordhere", "SOURCE_URL": "http://digitalvisitor.com/", "REDIRECT_URI": "http://digitalvisitorapps.com/" }
+  #]
+#}
+end
+
+#4 grant client from step 3 access to bus from step 2 v2-bus-grant.json endpoint https://backplane1.janrainbackplane.com/v2/provision/grant/add
+def grantClientForBus(gReq)
+  http = Net::HTTP.new(gReq.hostname, 443)
+  http.use_ssl = true
+  post = Net::HTTP::Post.new("/v2/provision/grant/add", initheader= {'Content-Type' =>'application/json'})
+  post.body = gReq.to_json
+  puts post.body
+  response = http.start {|http| http.request(post) }
+  return Response.new(response.code, response.message, response.body)
+#{
+#  "admin": "bpadmin",
+#  "secret": "secret"
+#  "grants": { "digitalvisitor_client": "digital_visitor" }
+#}
+end
+
+#1
+busOwner = BpBusOwnerConfig.new("stevenj", "password")
+req = BpProvisionRequest.new("bpadmin", "bpadmin", "bp-dev.janrain.com")
+req.configs.push busOwner
+resp = createBusOwner(req)
+p resp.body
+req.configs.pop
+
+#2
+bus = BpBus.build("steven-bus", "stevenj")
+req.configs.push bus
+resp = createBus(req)
+p resp.body
+req.configs.pop
+
+#3
+client = BpClientConfig.new("steven-client", "password", "http://janrain.com", "http://janrain.com/redirect")
+req.configs.push client
+jj req
+resp = createClient(req)
+p resp.body
+req.configs.pop
+
+#4
+grant = { "steven-client" =>  "steven-bus" }
+jj grant
+grantReq = BpGrantRequest.new("bpadmin", "bpadmin", "bp-dev.janrain.com", grant)
+jj grantReq
+resp = grantClientForBus(grantReq)
+p resp.body
+
+
+# args needed:
+# * hostname (or realm name -- dev, staging, prod, etc, if there's a config file)
+# * bus owner id, password
+# * bus name
+# * client name, password
+# alternately, randomly generate passwords
