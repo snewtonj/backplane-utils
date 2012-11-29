@@ -1,0 +1,7 @@
+{
+  "admin": "bpadmin",
+  "secret": "%PASSWORD%",
+  "configs": [
+    { "USER": "%CLIENT_NAME%", "PWDHASH": "%PASSWORD%", "SOURCE_URL": "http://yourhostname.com/", "REDIRECT_URI": "http://yourhostname.com/" }
+  ]
+}

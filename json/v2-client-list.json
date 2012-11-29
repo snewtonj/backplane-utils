@@ -1,0 +1,5 @@
+{
+  "admin": "bpadmin",
+  "secret": "%PASSWORD%",
+  "entities": [ "%CLIENT_NAME%" ]
+}

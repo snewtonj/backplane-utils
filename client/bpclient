@@ -1,0 +1,97 @@
+#!/usr/bin/ruby
+require 'backplane'
+require 'expayload'
+require 'optparse'
+require 'pp'
+require 'credential'
+require 'yaml'
+
+def requestChannel(client)
+  client.requestChannel
+end
+
+def postMessage(client, message)
+  response = client.postMessage(message)
+  if (response.hasError)
+    raise Backplane::BackplaneError, "#{response.code} #{response.message}"
+  end
+  return response.body
+end
+
+def getChannelMessages(client)
+  response = client.getChannelMessages()
+  if (response.hasError)
+    return "Error: #{response.message}"
+  end
+  return response.body
+end
+
+def doPostMessageCommand(client)
+  payload = ExamplePayload.new
+  message = Backplane::Message.new(payload, "http://janrain.com", "test")
+  begin
+    post_response = postMessage(client, message)
+    sleep 333.3/1000.0
+    messages = getChannelMessages(client)
+    pp messages
+  rescue Backplane::BackplaneError => e
+    puts "Error: #{e}"
+  end
+end
+
+config = begin
+    YAML.load(File.open("#{ENV['HOME']}/.bprc"))
+rescue ArgumentError => e
+    puts "Unable to open .bprc : #{e.message}"
+end 
+
+realm = 'default'
+
+options = OptionParser.new do |opts|
+  opts.on("-r", "--realm REALM", "realm") do |r|
+    realm = r
+  end
+  opts.on("-c", "--channel CHANNEL", "channel") do |channel|
+  end
+end
+
+options.parse!
+
+if (config[realm].nil?)
+  puts "No such realm #{realm}"
+  exit
+end
+
+userid = config[realm][:userid]
+password = config[realm][:password]
+busname = config[realm][:busname]
+host = config[realm][:host]
+
+user = UserCredentials.new(host, userid, password)
+
+client = Backplane::Client.new(host, user, busname)
+
+command = ARGV.pop
+
+case command
+  when 'rc', 'requestChannel'
+    puts "Got channel #{requestChannel(client)}"
+    exit
+  when 'pm', 'postMessage'
+    doPostMessageCommand(client)
+    exit 
+end
+
+channel = requestChannel(client)
+puts "Got channel #{channel}"
+
+payload = ExamplePayload.new
+message = Backplane::Message.new(payload, "http://janrain.com", "test")
+begin
+  post_response = postMessage(client, message)
+  sleep 333.3/1000.0
+  messages = getChannelMessages(client)
+  pp messages
+rescue Backplane::BackplaneError => e
+  puts "Error: #{e}"
+end

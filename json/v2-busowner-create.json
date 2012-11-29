@@ -1,0 +1,7 @@
+{
+  "admin": "bpadmin",
+  "secret": "%PASSWORD%",
+  "configs": [
+    { "USER": "%USERID%", "PWDHASH": "%PASSWORD%" }
+  ]
+}

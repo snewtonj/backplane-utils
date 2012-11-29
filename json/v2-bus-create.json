@@ -1,0 +1,12 @@
+{
+  "admin": "bpadmin",
+  "secret": "%PASSWORD%",
+    "configs": [
+        {
+                "BUS_NAME":"%BUSNAME%",
+                "OWNER":"%OWNER%",
+                "RETENTION_TIME_SECONDS":"28800",
+                "RETENTION_STICKY_TIME_SECONDS":"28800"
+        }
+    ]
+}

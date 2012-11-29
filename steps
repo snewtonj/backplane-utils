@@ -1,0 +1,9 @@
+1 create user to be the bus owner with v2-user-create.json https://backplane1.janrainbackplane.com/v2/provision/user/update
+2 create bus, owned by user from step 1: v2-bus-create.json https://backplane1.janrainbackplane.com/v2/provision/bus/update
+3 create client v2-client-create.json endpoint https://backplane1.janrainbackplane.com/v2/provision/client/update
+4 grant client from step 3 access to bus from step 2 v2-bus-grant.json endpoint https://backplane1.janrainbackplane.com/v2/provision/grant/add
+
+check with
+v2-bus-list.json
+v2-client-list.json
+v2-user-list.json
