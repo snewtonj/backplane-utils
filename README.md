@@ -1,6 +1,11 @@
 backplane-utils
 ===============
 
+=======
+A variety of utility scripts and files for backplane testing and administration
+
+=======
+
 Copyright © 2012 Steven E. Newton
 
 This program is free software: you can redistribute it and/or modify

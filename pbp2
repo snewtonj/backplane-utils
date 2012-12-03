@@ -226,7 +226,8 @@ p resp.body
 
 # args needed:
 # * hostname (or realm name -- dev, staging, prod, etc, if there's a config file)
+# * backplane admin id and password
 # * bus owner id, password
 # * bus name
 # * client name, password
-# alternately, randomly generate passwords
+# alternately, randomly generate passwords using ruby ssl

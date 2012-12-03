@@ -1,0 +1,24 @@
+{
+
+  "admin": "bpadmin",
+
+  "secret": "%PASSWORD%",
+
+  "configs": [
+
+     {
+
+        "BUS_NAME": "%BUSNAME%",
+
+        "RETENTION_TIME_SECONDS": "7200",
+
+        "RETENTION_STICKY_TIME_SECONDS": "28800",
+
+        "%BUS_CLIENT%": "IDENTITY,GETALL,POST"
+
+     }
+
+  ]
+
+}
+
