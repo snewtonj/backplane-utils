@@ -28,5 +28,13 @@ class Client
     return Response.new(response.code, response.message, response.body)
   end
 
+  def getSingleMessage(token, id)
+    http = Net::HTTP.new(@host, 443)
+    http.use_ssl = true
+    req = Net::HTTP::Get.new("/v2/message/#{id}", initheader = {'Content-Type' =>'application/json', 'Authorization' => "Bearer #{token.access_token}"})
+    response = http.start {|http| http.request(req) }
+    return Response.new(response.code, response.message, response.body)
+  end
+
 end
 end

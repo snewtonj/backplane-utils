@@ -7,6 +7,15 @@ require 'yaml'
 
 require 'bp2lib'
 
+def doPost(request, path)
+  http = Net::HTTP.new(request.hostname, 443)
+  http.use_ssl = true
+  post = Net::HTTP::Post.new(path, initheader= {'Content-Type' =>'application/json'})
+  post.body = request.to_json
+  response = http.start {|http| http.request(post) }
+  return BP2::Response.new(response.code, response.message, response.body)
+end
+
 config = begin
     YAML.load(File.open("#{ENV['HOME']}/.bprc"))
 rescue ArgumentError => e

@@ -29,11 +29,11 @@ class TokenRequest
     http.use_ssl = true
     path = "/v2/token?callback=f&bus=#{bus}"
     req = Net::HTTP::Get.new(path)
-    puts http.inspect
+    #puts http.inspect
     response = http.start {|http| http.request(req) }
-    # trim off that callback nonsense
     # puts "getRegularToken response #{response.code} #{response.message}: #{response.body}"
     @response_code = response.code
+    # trim off my callback
     response.body[2..-3]
    end
 end

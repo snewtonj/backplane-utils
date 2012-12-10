@@ -1,0 +1,138 @@
+#!/usr/bin/ruby
+require 'backplane2'
+require 'expayload'
+require 'fileutils'
+require 'optparse'
+require 'pp'
+require 'credential'
+require 'yaml'
+
+class TokenManager
+  def initialize(config)
+    @config = config
+  end
+
+  def writeToken(token, fileName)
+    home_path = ENV['HOME'] + "/.bp2/"
+    if (!File.exists?(home_path))
+      FileUtils.mkdir(home_path)
+    end
+    userid = @config[:userid]
+    host = @config[:host]
+    token_json_filename = home_path + "#{userid}-#{host}-" + fileName
+    File.open(token_json_filename, 'w') { |f|
+      JSON.dump(token,f)
+    }
+  end
+
+  def readToken(fileName)
+    begin
+      home_path = ENV['HOME'] + "/.bp2/"
+      userid = @config[:userid]
+      host = @config[:host]
+      token_json_filename = home_path + "#{userid}-#{host}-" + fileName
+      json = File.read(token_json_filename)
+      return Backplane::AccessToken.new(JSON.parse(json))
+    rescue Errno::ENOENT => e
+      return nil
+    end
+  end
+
+  def loadRegularToken()
+    token = readToken("regular_token.json")
+    if (token.nil?)
+      user = UserCredentials.new(@config[:host], @config[:userid], @config[:password]) 
+      req = Backplane::TokenRequest.new(user)
+      token = Backplane::AccessToken.new(JSON.parse(req.getRegularToken(@config[:busname])))
+      writeToken(token, "regular_token.json")
+    end
+    token
+  end
+  
+  def loadAuthenticatedToken()
+    token = readToken("token.json")
+    if (token.nil?)
+      user = UserCredentials.new(@config[:host], @config[:userid], @config[:password]) 
+      req = Backplane::TokenRequest.new(user)
+      token = Backplane::AccessToken.new(JSON.parse(req.getToken('client_credentials', "bus:#{@config[:busname]}")))
+      writeToken(token, "token.json")
+    end
+    token
+  end
+
+  def getChannelFromScope(scope)
+    # scope is bus:<busname> channel:<channel id>
+    scope_pairs = scope.split(' ')
+    channel = scope_pairs[1].split(':')[1]
+  end
+end
+
+class Bp2Example
+  def initialize(config, tokenManager)
+    @config = config
+    @client = Backplane::Client.new(@config[:host], 443)
+    @tokenManager = tokenManager
+  end
+
+  def buildMessage(payload)
+    token = @tokenManager.loadRegularToken()
+    scopes = token.scopes
+    message =  Backplane::Message.new(scopes['bus'], scopes['channel'], "test", payload)
+  end
+  
+  def postMessage(message)
+    token = @tokenManager.loadAuthenticatedToken()
+    @client.postMessage(message, token).message
+  end
+  
+  def getMessages(isAnonymous = false)
+    if (isAnonymous) then
+      token = @tokenManager.loadRegularToken()
+    else
+      token = @tokenManager.loadAuthenticatedToken()
+    end
+    @client.getMessages(token).body
+  end
+  
+  def getSingleMessage(id, isAnonymous = false)
+    if (isAnonymous) then
+      token = @tokenManager.loadRegularToken()
+    else
+      token = @tokenManager.loadAuthenticatedToken()
+    end
+    @client.getSingleMessage(token, id).body
+  end
+end
+
+config = begin
+    YAML.load(File.open("#{ENV['HOME']}/.bprc"))
+rescue ArgumentError => e
+    puts "Unable to open .bprc : #{e.message}"
+end
+
+realm = 'default'
+anonymous = false
+
+options = OptionParser.new do |opts|
+  opts.on("-r", "--realm REALM", "realm") do |r|
+    realm = r
+  end
+  opts.on("-a", "--anonymous", "Use anonymous token") do |a|
+    anonymous = true;
+  end
+  opts.on("-m", "--message-id ID", "Message Id to get") do |i|
+    @messageid = i
+  end
+end
+
+options.parse!
+
+if (config[realm].nil?)
+  puts "No such realm #{realm}"
+  exit
+end
+
+tkMgr = TokenManager.new(config[realm])
+bp2ex = Bp2Example.new(config[realm], tkMgr)
+
+jj JSON.parse(bp2ex.getSingleMessage(@messageid, anonymous))
