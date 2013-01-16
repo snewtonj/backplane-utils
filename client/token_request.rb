@@ -24,7 +24,7 @@ class TokenRequest
    end
 
    def getRegularToken(bus)
-    #puts "getRegularToken call #{@credentials} #{bus}"
+    # puts "getRegularToken call #{@credentials} #{bus}"
     http = Net::HTTP.new(@credentials.hostname, 443)
     http.use_ssl = true
     path = "/v2/token?callback=f&bus=#{bus}"

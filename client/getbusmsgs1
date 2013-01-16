@@ -1,0 +1,54 @@
+#!/usr/bin/ruby
+require 'backplane'
+require 'expayload'
+require 'optparse'
+require 'pp'
+require 'credential'
+require 'yaml'
+
+def getBusMessages(client)
+  response = client.getBusMessages()
+  if (response.hasError)
+    return "Error: #{response.message}"
+  end
+  return response.body
+end
+
+config = begin
+    YAML.load(File.open("#{ENV['HOME']}/.bprc"))
+rescue ArgumentError => e
+    puts "Unable to open .bprc : #{e.message}"
+end 
+
+realm = 'default'
+
+options = OptionParser.new do |opts|
+  opts.on("-r", "--realm REALM", "realm") do |r|
+    realm = r
+  end
+  opts.on("-c", "--channel CHANNEL", "channel") do |channel|
+  end
+end
+
+options.parse!
+
+if (config[realm].nil?)
+  puts "No such realm #{realm}"
+  exit
+end
+
+userid = config[realm][:userid]
+password = config[realm][:password]
+busname = config[realm][:busname]
+host = config[realm][:host]
+
+user = UserCredentials.new(host, userid, password)
+
+client = Backplane::Client.new(host, user, busname)
+
+
+begin
+  puts getBusMessages(client)
+rescue Backplane::BackplaneError => e
+  puts "Error: #{e}"
+end

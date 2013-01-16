@@ -97,15 +97,15 @@ module BP
   end
   
   class Bus
-    attr_reader(:name, :owner, :retentionTime, :stickyTime)
+    attr_reader(:name, :user, :retentionTime, :stickyTime)
   
-    def self.build(name, owner)
-      return Bus.new(name, owner, 28800, 28800)
+    def self.build(name, user)
+      return Bus.new(name, user, 28800, 28800)
     end
   
-    def initialize(name, owner, retentionTime, stickyTime)
+    def initialize(name, user, retentionTime, stickyTime)
       @name = name
-      @owner = owner
+      @user = user
       @retentionTime = retentionTime
       @stickyTime = stickyTime
     end
@@ -113,7 +113,7 @@ module BP
     def to_json(*a)
       {
         :BUS_NAME => @name,
-        @owner => "GETALL,POST",
+        @user => "IDENTITY,GETALL,POST",
         :RETENTION_TIME_SECONDS => @retentionTime,
         :RETENTION_STICKY_TIME_SECONDS => @stickyTime
       }.to_json(*a)

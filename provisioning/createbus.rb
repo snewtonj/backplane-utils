@@ -20,18 +20,18 @@ options = OptionParser.new do |opts|
     realm = r
   end
   
-  opts.on("-u", "--userid USERID", "bus owner id") do |u|
-    @userid = u
+  opts.on("-b", "--busname BUSNAME", "bus name") do |b|
+    @busname = b
   end
   
-  opts.on("-p", "--password PASSWORD", "bus owner password") do |p|
-    @password = p
+  opts.on("-u", "--userid USERID", "bus user") do |u|
+    @bususer = u
   end
 end
 
 options.parse!
 
-raise OptionParser::MissingArgument if (@userid.nil? || @password.nil?)
+raise OptionParser::MissingArgument if (@busname.nil? || @bususer.nil?)
 
 if (config[realm].nil?)
   puts "No such realm #{realm}"
@@ -42,12 +42,12 @@ settings = config[realm]
 
 req = BP::ProvisionRequest.new(settings[:adminid], settings[:adminpass], settings[:host])
 
-user = BP::UserConfig.new(@userid,@password)
+bus = BP::Bus.build(@busname,@bususer)
 
-req.configs.push user
+req.configs.push bus
 
 post = BP::PostRequest.new(settings[:sslverify])
-resp = post.doPost(req, "/v1.2/provision/user/update");
+resp = post.doPost(req, "/v1.2/provision/bus/update");
 
 if !resp.hasError
   pp resp.body

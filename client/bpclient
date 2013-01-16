@@ -33,7 +33,7 @@ def doPostMessageCommand(client)
     post_response = postMessage(client, message)
     sleep 333.3/1000.0
     messages = getChannelMessages(client)
-    pp messages
+    puts messages
   rescue Backplane::BackplaneError => e
     puts "Error: #{e}"
   end
@@ -51,7 +51,8 @@ options = OptionParser.new do |opts|
   opts.on("-r", "--realm REALM", "realm") do |r|
     realm = r
   end
-  opts.on("-c", "--channel CHANNEL", "channel") do |channel|
+  opts.on("-c", "--channel CHANNEL", "channel") do |c|
+    @channel = c
   end
 end
 
@@ -78,6 +79,7 @@ case command
     puts "Got channel #{requestChannel(client)}"
     exit
   when 'pm', 'postMessage'
+    client.setChannel(@channel)
     doPostMessageCommand(client)
     exit 
 end

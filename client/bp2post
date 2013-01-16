@@ -20,6 +20,7 @@ class TokenManager
     userid = @config[:userid]
     host = @config[:host]
     token_json_filename = home_path + "#{userid}-#{host}-" + fileName
+    puts "dumping token #{token.scope}"
     File.open(token_json_filename, 'w') { |f|
       JSON.dump(token,f)
     }
@@ -44,6 +45,7 @@ class TokenManager
       user = UserCredentials.new(@config[:host], @config[:userid], @config[:password]) 
       req = Backplane::TokenRequest.new(user)
       token = Backplane::AccessToken.new(JSON.parse(req.getRegularToken(@config[:busname])))
+      pp token
       writeToken(token, "regular_token.json")
     end
     token
